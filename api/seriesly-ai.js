@@ -1,8 +1,6 @@
 // api/seriesly-ai.js
-// Endpoint usado pelo frontend em /api/seriesly-ai
 
 export default async function handler(req, res) {
-  // Aceita só POST
   if (req.method !== "POST") {
     return res.status(405).json({
       reply: "Método não permitido. Use POST."
@@ -11,11 +9,10 @@ export default async function handler(req, res) {
 
   const apiKey = process.env.OPENAI_API_KEY;
 
-  // Se a variável não estiver configurada na Vercel
   if (!apiKey) {
     return res.status(200).json({
       reply:
-        "A IA ainda não está configurada no servidor (OPENAI_API_KEY ausente). O bot local continua funcionando normalmente."
+        "A IA do Seriesly ainda não está configurada. Em breve estará disponível."
     });
   }
 
@@ -24,11 +21,10 @@ export default async function handler(req, res) {
 
     if (!message || typeof message !== "string") {
       return res.status(200).json({
-        reply: "Preciso de uma mensagem de texto para ajudar você."
+        reply: "Por favor, escreva sua dúvida para que eu possa ajudar."
       });
     }
 
-    // Converte o histórico salvo no navegador para o formato da API
     const mappedHistory = Array.isArray(history)
       ? history.slice(-10).map((m) => ({
           role: m.role === "user" ? "user" : "assistant",
@@ -36,16 +32,13 @@ export default async function handler(req, res) {
         }))
       : [];
 
-    // Prompt de sistema para orientar a IA
     const systemMessage = {
       role: "system",
       content:
-        "Você é o suporte oficial do Seriesly, um app que organiza links e perfis (principalmente vídeos de Instagram, TikTok, X). " +
-        "Explique de forma simples e curta. Foque em: como salvar links, buscar perfis, planos Free/Premium/Lifetime, problemas de login e conta. " +
-        "Responda sempre em português brasileiro, a não ser que o usuário escreva claramente em inglês."
+        "Você é o assistente do Seriesly. Responda sempre de forma clara, útil e educada. " +
+        "Foque em ajudar com dúvidas sobre login, planos, salvar links, buscar perfis e uso geral do app."
     };
 
-    // Chamada para a API nova de 'responses'
     const response = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: {
@@ -59,43 +52,32 @@ export default async function handler(req, res) {
           ...mappedHistory,
           { role: "user", content: message }
         ],
-        max_output_tokens: 400,
+        max_output_tokens: 300,
         temperature: 0.4
       })
     });
 
-    // Se a API respondeu com erro (sem crédito, etc.)
     if (!response.ok) {
-      let errorMessage = "Erro ao conectar com a IA.";
-      try {
-        const errJson = await response.json();
-        if (errJson && errJson.error && errJson.error.message) {
-          errorMessage = errJson.error.message;
-        }
-      } catch (_) {
-        // ignora erro de parse
-      }
+      console.error("ERRO NA OPENAI:", await response.text());
 
       return res.status(200).json({
         reply:
-          "No momento não consegui falar com a IA na nuvem: " +
-          errorMessage +
-          " — você ainda pode usar as respostas básicas do bot aqui embaixo."
+          "A IA do Seriesly está temporariamente indisponível. Tente novamente em alguns instantes."
       });
     }
 
-    // Lê o formato da API de responses
     const data = await response.json();
     const reply =
       data?.output?.[0]?.content?.[0]?.text?.trim() ||
-      "Não consegui gerar uma resposta agora. Tente perguntar de outro jeito.";
+      "No momento não consegui gerar uma resposta, tente novamente.";
 
     return res.status(200).json({ reply });
-  } catch (err) {
-    console.error("Erro em /api/seriesly-ai:", err);
+  } catch (error) {
+    console.error("ERRO NO SERVIDOR SERIESLY:", error);
+
     return res.status(200).json({
       reply:
-        "Aconteceu um erro técnico ao falar com a IA. O bot local continua funcionando, mas as respostas inteligentes podem ficar fora do ar por alguns minutos."
+        "A IA do Seriesly está temporariamente indisponível. Já estamos trabalhando para normalizar."
     });
   }
 }
