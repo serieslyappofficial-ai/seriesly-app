@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Seriesly – Continue de onde parou</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Organize e encontre a continuação de vídeos do Instagram, TikTok e X." />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Seriesly – Continue de onde parou" />
+  <meta property="og:description" content="Organize e encontre a continuação de vídeos do Instagram, TikTok e X." />
+  <meta property="og:type" content="website" />
+
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Splash / Loading -->
+    <div id="splash-screen" class="center-screen">
+      <div class="card splash-card">
+        <div class="logo-row click-home">
+          <img src="logo-seriesly.png" alt="Seriesly" class="logo-img big" />
+          <div class="logo-text">
+            <div class="logo-title">Seriesly</div>
+            <div class="logo-sub">Continue de onde parou</div>
+          </div>
+        </div>
+        <p class="muted" data-i18n="splashText">
+          Carregando Seriesly…<br />
+          Se esta tela ficar parada, o navegador bloqueou algum script. (A gente mostra o erro aqui.)
+        </p>
+        <pre id="splash-error" class="error-log" style="display:none;"></pre>
+      </div>
+    </div>
+
+    <!-- Auth layout -->
+    <div id="auth-layout" class="center-screen" style="display:none;">
+      <div class="card auth-card">
+        <div class="logo-row mb-16 click-home">
+          <img src="logo-seriesly.png" alt="Seriesly" class="logo-img" />
+          <div class="logo-text">
+            <div class="logo-title">Seriesly</div>
+            <div class="logo-sub" data-i18n="authSubtitle">
+              Organize as continuações dos seus vídeos.
+            </div>
+          </div>
+        </div>
+
+        <div class="tabs">
+          <button class="tab-button active" data-auth-tab="login" data-i18n="loginTab">Entrar</button>
+          <button class="tab-button" data-auth-tab="signup" data-i18n="signupTab">Criar conta</button>
+          <button class="tab-button" data-auth-tab="reset" data-i18n="resetTab">Esqueci a senha</button>
+        </div>
+
+        <form id="login-form" class="auth-form">
+          <label class="field">
+            <span data-i18n="emailLabel">E-mail</span>
+            <input type="email" id="login-email" required />
+          </label>
+          <label class="field">
+            <span data-i18n="passwordLabel">Senha</span>
+            <input type="password" id="login-password" required />
+          </label>
+          <button type="submit" class="btn primary" data-i18n="loginButton">Entrar</button>
+        </form>
+
+        <form id="signup-form" class="auth-form" style="display:none;">
+          <label class="field">
+            <span data-i18n="nameLabel">Nome</span>
+            <input type="text" id="signup-name" required />
+          </label>
+          <label class="field">
+            <span data-i18n="emailLabel">E-mail</span>
+            <input type="email" id="signup-email" required />
+          </label>
+          <label class="field">
+            <span data-i18n="passwordLabel">Senha</span>
+            <input type="password" id="signup-password" required />
+          </label>
+          <button type="submit" class="btn primary" data-i18n="signupButton">Criar conta</button>
+          <p class="muted small" data-i18n="signupInfo">
+            Você receberá um e-mail de confirmação para ativar sua conta.
+          </p>
+        </form>
+
+        <form id="reset-form" class="auth-form" style="display:none;">
+          <label class="field">
+            <span data-i18n="emailLabel">E-mail</span>
+            <input type="email" id="reset-email" required />
+          </label>
+          <button type="submit" class="btn primary" data-i18n="resetButton">Enviar link de recuperação</button>
+        </form>
+
+        <div class="auth-footer">
+          <button id="lang-toggle" class="chip">PT / EN</button>
+        </div>
+
+        <pre id="auth-error" class="error-log" style="display:none;"></pre>
+      </div>
+    </div>
+
+    <!-- App layout -->
+    <div id="app-layout" style="display:none;">
+      <header class="topbar">
+        <div class="topbar-left">
+          <div class="logo-row click-home">
+            <img src="logo-seriesly.png" alt="Seriesly" class="logo-img" />
+            <div class="logo-text">
+              <div class="logo-title">Seriesly</div>
+              <div class="logo-sub" data-i18n="appSubtitle">
+                Seu hub de vídeos para continuar depois.
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <button id="support-btn" class="icon-button" title="Suporte">❓</button>
+          <button id="lang-toggle-app" class="chip small">PT / EN</button>
+          <button id="avatar-button" class="avatar-button">
+            <span id="avatar-initials">U</span>
+          </button>
+        </div>
+      </header>
+
+      <main class="main">
+        <aside class="sidebar">
+          <nav class="nav">
+            <button class="nav-item active" data-section="dashboard">🏠 <span data-i18n="navDashboard">Início</span></button>
+            <button class="nav-item" data-section="search">🔎 <span data-i18n="navSearch">Buscar perfis</span></button>
+            <button class="nav-item" data-section="library">📚 <span data-i18n="navLibrary">Minha biblioteca</span></button>
+            <button class="nav-item" data-section="account">👤 <span data-i18n="navAccount">Conta & Perfil</span></button>
+            <button class="nav-item" data-section="support">💬 <span data-i18n="navSupport">Suporte</span></button>
+            <button class="nav-item nav-item-logout" id="logout-sidebar-btn">🚪 <span data-i18n="logout">Sair</span></button>
+          </nav>
+        </aside>
+
+        <section class="content">
+          <!-- Banner Premium (apenas free) -->
+          <div id="premium-banner" class="premium-banner" style="display:none;">
+            <div>
+              <strong data-i18n="bannerTitle">Você está no plano Free</strong>
+              <p data-i18n="bannerText">Desbloqueie pastas ilimitadas, tags e histórico completo com o Premium.</p>
+            </div>
+            <button id="see-premium-btn" class="btn ghost" data-i18n="bannerButton">Ver planos Premium</button>
+          </div>
+
+          <!-- Dashboard -->
+          <div id="section-dashboard" class="section">
+            <h1 data-i18n="dashboardTitle">Bem-vindo ao Seriesly</h1>
+            <p class="muted" data-i18n="dashboardIntro">
+              Salve vídeos do Instagram, TikTok e X para continuar depois, sem perder a sequência.
+            </p>
+
+            <div class="card grid-2">
+              <div>
+                <h2 data-i18n="quickSaveTitle">Salvar rápido</h2>
+                <p class="muted" data-i18n="quickSaveText">
+                  Cole o link do vídeo ou o @ do perfil para salvar na sua biblioteca.
+                </p>
+                <form id="quick-save-form">
+                  <label class="field">
+                    <span data-i18n="linkOrHandleLabel">Link do vídeo ou @perfil</span>
+                    <input type="text" id="quick-input" placeholder="@perfil ou link" required />
+                  </label>
+                  <label class="field">
+                    <span data-i18n="tagLabel">Tag / Tema (opcional)</span>
+                    <input type="text" id="quick-tag" placeholder="ex: aulas, receitas, motivação" />
+                  </label>
+                  <label class="field">
+                    <span data-i18n="folderLabel">Pasta (opcional)</span>
+                    <select id="quick-folder">
+                      <option value="" data-i18n="folderNone">Sem pasta</option>
+                    </select>
+                  </label>
+                  <button type="submit" class="btn primary" data-i18n="quickSaveButton">Salvar na biblioteca</button>
+                </form>
+              </div>
+              <div>
+                <h2 data-i18n="recentTitle">Recentes</h2>
+                <ul id="recent-list" class="list minimal">
+                  <li class="muted" data-i18n="recentEmpty">Nenhum vídeo salvo ainda. Comece colando um link ou @.</li>
+                </ul>
+
+                <div class="mt-12">
+                  <h2 data-i18n="statsTitle">Resumo rápido</h2>
+                  <ul id="stats-list" class="list minimal small-stats">
+                    <li class="muted" data-i18n="statsEmpty">
+                      Assim que você salvar alguns itens, aparece aqui um resumo do seu uso.
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Search Profiles -->
+          <div id="section-search" class="section" style="display:none;">
+            <h1 data-i18n="searchTitle">Buscar perfis</h1>
+            <p class="muted" data-i18n="searchIntro">
+              Digite um @ (sem espaços). Abrimos o perfil no Instagram, TikTok e X (Twitter).
+            </p>
+
+            <div class="card">
+              <form id="profile-search-form">
+                <label class="field">
+                  <span data-i18n="handleLabel">Usuário (@)</span>
+                  <input type="text" id="handle-input" placeholder="@exemplo" required />
+                </label>
+
+                <div class="row">
+                  <button type="submit" class="btn primary" data-i18n="searchButton">Buscar</button>
+                  <button type="button" id="save-handle-btn" class="btn secondary" data-i18n="saveHandleButton">Salvar como atalho</button>
+                </div>
+
+                <p class="muted small" data-i18n="searchHint">
+                  Dica: se você colar um link, use “Salvar rápido” no Início.
+                </p>
+              </form>
+
+              <div id="search-results" class="search-results" style="display:none;">
+                <h2 data-i18n="resultsTitle">Resultados</h2>
+                <div class="results-grid">
+                  <a id="ig-link" class="result-card" target="_blank" rel="noreferrer">
+                    <div class="result-top">Instagram</div>
+                    <div class="result-bottom" id="ig-handle">@</div>
+                  </a>
+                  <a id="tt-link" class="result-card" target="_blank" rel="noreferrer">
+                    <div class="result-top">TikTok</div>
+                    <div class="result-bottom" id="tt-handle">@</div>
+                  </a>
+                  <a id="x-link" class="result-card" target="_blank" rel="noreferrer">
+                    <div class="result-top">X</div>
+                    <div class="result-bottom" id="x-handle">@</div>
+                  </a>
+                </div>
+
+                <div class="row mt-10">
+                  <button type="button" id="copy-links-btn" class="btn ghost" data-i18n="copyLinksButton">Copiar links</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="card mt-12">
+              <h2 data-i18n="shortcutsTitle">Atalhos salvos</h2>
+              <p class="muted" data-i18n="shortcutsIntro">Seus perfis favoritos para abrir rápido.</p>
+              <ul id="shortcuts-list" class="list rich-list">
+                <li class="muted" data-i18n="shortcutsEmpty">Nenhum atalho salvo ainda.</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Library -->
+          <div id="section-library" class="section" style="display:none;">
+            <div class="section-header">
+              <div>
+                <h1 data-i18n="libraryTitle">Minha biblioteca</h1>
+                <p class="muted" data-i18n="libraryIntro">
+                  Todos os vídeos e perfis que você salvou para continuar depois.
+                </p>
+              </div>
+              <div class="section-actions">
+                <input id="library-search" class="input" placeholder="Buscar por tag, link ou @..." />
+              </div>
+            </div>
+
+            <div class="card mt-12">
+              <div class="section-header">
+                <div>
+                  <h2 data-i18n="foldersTitle">Pastas</h2>
+                  <p class="muted" data-i18n="foldersIntro">Organize sua biblioteca por tema, projeto ou cliente.</p>
+                </div>
+                <div class="section-actions">
+                  <button id="new-folder-btn" class="btn secondary" type="button" data-i18n="newFolder">Nova pasta</button>
+                </div>
+              </div>
+
+              <div id="folder-chips" class="chips-row">
+                <button class="chip chip-active" type="button" data-folder-filter="all" data-i18n="folderAll">Todas</button>
+                <button class="chip" type="button" data-folder-filter="none" data-i18n="folderNoFolder">Sem pasta</button>
+              </div>
+            </div>
+
+            <ul id="library-list" class="list rich-list">
+              <li class="muted" data-i18n="libraryEmpty">
+                Você ainda não salvou nada. Use o campo de salvar rápido no início.
+              </li>
+            </ul>
+          </div>
+
+          <!-- Account & Profile -->
+          <div id="section-account" class="section" style="display:none;">
+            <h1 data-i18n="accountTitle">Conta & Perfil</h1>
+            <p class="muted" data-i18n="accountIntro">Gerencie seus dados, plano atual e preferências.</p>
+
+            <div class="tabs mb-16">
+              <button class="tab-button active" data-account-tab="profile" data-i18n="tabProfile">Perfil</button>
+              <button class="tab-button" data-account-tab="subscription" data-i18n="tabSubscription">Assinatura</button>
+            </div>
+
+            <div id="account-profile" class="account-tab">
+              <div class="card profile-card">
+                <div class="profile-avatar-block">
+                  <div id="profile-avatar" class="avatar-large">
+                    <span id="profile-avatar-initials">U</span>
+                  </div>
+                  <div>
+                    <button id="change-avatar-btn" class="btn ghost small" data-i18n="changeAvatar">Alterar foto</button>
+                    <input type="file" id="avatar-file-input" accept="image/*" style="display:none;" />
+                  </div>
+                </div>
+
+                <div class="profile-fields">
+                  <label class="field">
+                    <span data-i18n="nameLabel">Nome</span>
+                    <input type="text" id="profile-name" />
+                  </label>
+                  <label class="field">
+                    <span data-i18n="emailLabel">E-mail</span>
+                    <input type="email" id="profile-email" disabled />
+                  </label>
+                  <label class="field">
+                    <span data-i18n="languageLabel">Idioma</span>
+                    <select id="profile-language">
+                      <option value="pt">Português</option>
+                      <option value="en">English</option>
+                    </select>
+                  </label>
+                  <div class="profile-actions">
+                    <button id="save-profile-btn" class="btn primary" data-i18n="saveProfile">Salvar perfil</button>
+                    <button id="logout-btn" class="btn ghost" data-i18n="logout">Sair</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div id="account-subscription" class="account-tab" style="display:none;">
+              <div class="card">
+                <h2 data-i18n="subscriptionStatusTitle">Status da assinatura</h2>
+                <p id="subscription-status" class="muted">Plano: Free</p>
+                <button id="go-to-plans-btn" class="btn secondary" data-i18n="goToPlans">Ver planos e fazer upgrade</button>
+              </div>
+
+              <div class="card">
+                <h2 data-i18n="plansTitle">Planos Seriesly</h2>
+                <p class="muted" data-i18n="plansIntro">
+                  Comece grátis e evolua para o Premium quando quiser. Sem burocracia.
+                </p>
+
+<div class="plans-grid">
+              <div class="plan-card highlight" data-plan="premium">
+                <div class="plan-header">
+                  <h2>Premium</h2>
+                  <span class="badge badge-accent" data-i18n="mostPopularBadge">Mais popular</span>
+                </div>
+                <div class="plan-price">R$ 14,90 <span class="plan-price-sub" data-i18n="perMonth">/mês</span></div>
+                <div class="plan-promo">Promo: R$ 59,90 por 5 meses + 1 mês grátis</div>
+                <ul class="plan-features">
+                  <li data-i18n="premFeat1">Pastas e organização avançada</li>
+                  <li data-i18n="premFeat2">Tags e busca inteligente</li>
+                  <li data-i18n="premFeat3">Histórico completo</li>
+                  <li data-i18n="premFeat4">Upload de foto de perfil</li>
+                  <li data-i18n="premFeat5">Suporte prioritário</li>
+                </ul>
+                <button id="premium-monthly-btn" class="btn primary" data-i18n="choosePremiumMonthly">Escolher Premium mensal</button>
+                <button id="premium-promo-btn" class="btn secondary" data-i18n="choosePremiumPromo">Escolher Promo 5 meses +1 mês grátis</button>
+              </div>
+
+              <div class="plan-card" data-plan="lifetime">
+                <div class="plan-header">
+                  <h2>Lifetime</h2>
+                  <span class="badge badge-outline" data-i18n="bestValueBadge">Melhor custo-benefício</span>
+                </div>
+                <div class="plan-price">R$ 297 <span class="plan-price-sub" data-i18n="once">pagamento único</span></div>
+                <ul class="plan-features">
+                  <li data-i18n="lifeFeat1">Todos os recursos do Premium</li>
+                  <li data-i18n="lifeFeat2">Acesso vitalício ao Seriesly</li>
+                  <li data-i18n="lifeFeat3">Sem mensalidade, sem renovação</li>
+                </ul>
+                <button id="premium-lifetime-btn" class="btn secondary" data-i18n="choosePremiumLifetime">Escolher Lifetime</button>
+              </div>
+            </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Support -->
+          <div id="section-support" class="section" style="display:none;">
+            <h1 data-i18n="supportTitle">Suporte</h1>
+            <p class="muted" data-i18n="supportIntro">
+              Em caso de dúvidas, problemas ou sugestões, fale com a gente.
+            </p>
+
+            <div class="card">
+              <h2 data-i18n="supportEmailTitle">Suporte por e-mail</h2>
+              <p>
+                <span data-i18n="supportEmailText">Envie um e-mail para:</span>
+                <a href="mailto:serieslyapp.official@gmail.com">serieslyapp.official@gmail.com</a>
+              </p>
+              <p class="muted" data-i18n="supportFuture">
+                Agora você também tem um chat com IA (modo gratuito) aqui embaixo.
+              </p>
+            </div>
+
+            <div class="card mt-12">
+              <h2 data-i18n="aiChatTitle">Chat com IA</h2>
+              <p class="muted" data-i18n="aiChatIntro">
+                Escreva sua dúvida. O Seriesly AI responde automaticamente. Se a IA em nuvem estiver configurada, as respostas ficam ainda mais inteligentes. Se precisar, ele sugere falar por e-mail.
+              </p>
+
+              <div class="chat-box" id="chat-box"></div>
+
+              <form id="chat-form" class="chat-form">
+                <input id="chat-input" class="input" type="text" placeholder="Digite sua dúvida..." required />
+                <button class="btn primary" type="submit" data-i18n="send">Enviar</button>
+              </form>
+
+              <div class="row mt-10">
+                <button id="chat-clear" class="btn ghost" type="button" data-i18n="clearChat">Limpar chat</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+
+    <!-- Modal Folder -->
+    <div id="folder-modal-backdrop" class="modal-backdrop" style="display:none;">
+      <div class="modal">
+        <h2 data-i18n="folderModalTitle">Nova pasta</h2>
+        <p class="muted" data-i18n="folderModalText">Crie uma pasta para organizar seus links e perfis.</p>
+        <label class="field">
+          <span data-i18n="folderNameLabel">Nome da pasta</span>
+          <input id="folder-name-input" type="text" placeholder="ex: Clientes, Receitas, Estudos" />
+        </label>
+        <div class="modal-actions">
+          <button id="folder-modal-confirm" class="btn primary" type="button" data-i18n="createFolder">Criar</button>
+          <button id="folder-modal-cancel" class="btn ghost" type="button" data-i18n="cancel">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Premium -->
+    <div id="premium-modal-backdrop" class="modal-backdrop" style="display:none;">
+      <div class="modal">
+        <h2 id="premium-modal-title">Confirmar upgrade</h2>
+        <p id="premium-modal-text" class="muted">
+          Este é um exemplo de fluxo de upgrade. A integração com pagamento
+          (Pix, cartão, etc.) será conectada aqui.
+        </p>
+        <div class="modal-actions">
+          <button id="premium-modal-confirm" class="btn primary">Confirmar upgrade</button>
+          <button id="premium-modal-cancel" class="btn ghost">Cancelar</button>
+        </div>
+        <p class="muted small">
+          Obs: por enquanto, este botão apenas simula o upgrade marcando seu plano
+          como Premium dentro do Seriesly (no Supabase).
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
